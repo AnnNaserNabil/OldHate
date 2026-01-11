@@ -20,10 +20,14 @@ def main():
     set_seed(config.seed)
 
     # Load tokenizer
+    print(f"Loading tokenizer from {config.model_path}...")
     tokenizer = AutoTokenizer.from_pretrained(config.model_path)
+    print("Tokenizer loaded successfully.")
 
     # Load and preprocess data
+    print(f"Loading data from {config.dataset_path}...")
     comments, labels = load_and_preprocess_data(config.dataset_path)
+    print(f"Data loaded: {len(comments)} samples.")
 
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

@@ -8,7 +8,7 @@ from torch.optim import AdamW
 from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import mlflow
 import pandas as pd
 import time
@@ -221,6 +221,7 @@ def run_kfold_training(config, comments, labels, tokenizer, device):
     print(f"{'='*60}\n")
     
     mlflow.set_experiment(config.mlflow_experiment_name)
+    print(f"Starting MLflow run for experiment: {config.mlflow_experiment_name}")
 
     with mlflow.start_run(run_name=f"{config.author_name}_batch{config.batch}_lr{config.lr}_epochs{config.epochs}"):
         run_id = mlflow.active_run().info.run_id
@@ -244,12 +245,14 @@ def run_kfold_training(config, comments, labels, tokenizer, device):
             'stratification_type': config.stratification_type
         })
 
+        print("Preparing K-fold splits...")
         kfold_splits = prepare_kfold_splits(
             comments, labels,
             num_folds=config.num_folds,
             stratification_type=config.stratification_type,
             seed=config.seed
         )
+        print("Splits prepared.")
 
         fold_results = []
         best_fold_model = None
@@ -292,14 +295,17 @@ def run_kfold_training(config, comments, labels, tokenizer, device):
                                        config.max_length, val_cache_path)
 
             train_loader = DataLoader(train_dataset, batch_size=config.batch, 
-                                     shuffle=True, num_workers=2, pin_memory=True)
+                                     shuffle=True, num_workers=0, pin_memory=True)
             val_loader = DataLoader(val_dataset, batch_size=config.batch, 
-                                   shuffle=False, num_workers=2, pin_memory=True)
+                                   shuffle=False, num_workers=0, pin_memory=True)
 
+            print(f"Initializing model: {config.model_path}")
             model = TransformerBinaryClassifier(config.model_path, dropout=config.dropout)
             if config.freeze_base:
+                print("Freezing base layers...")
                 model.freeze_base_layers()
             model.to(device)
+            print(f"Model moved to {device}")
 
             if fold == 0:
                 model_metrics = get_model_metrics(model)
