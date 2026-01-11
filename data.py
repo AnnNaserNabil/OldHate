@@ -101,6 +101,20 @@ def prepare_kfold_splits(comments, labels, num_folds=5, stratification_type='bin
     Returns:
         generator: K-fold split indices
     """
+    if num_folds == 1:
+        from sklearn.model_selection import train_test_split
+        print(f"Using a single 80/20 split (num_folds=1)")
+        indices = np.arange(len(comments))
+        if stratification_type == 'binary':
+            train_idx, val_idx = train_test_split(
+                indices, test_size=0.2, random_state=seed, stratify=labels
+            )
+        else:
+            train_idx, val_idx = train_test_split(
+                indices, test_size=0.2, random_state=seed
+            )
+        return [(train_idx, val_idx)]
+
     if stratification_type == 'binary':
         print(f"Using StratifiedKFold with {num_folds} folds for binary hate speech classification")
         kfold = StratifiedKFold(n_splits=num_folds, shuffle=True, random_state=seed)
